@@ -1,9 +1,34 @@
-import React, {useState} from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, {useState, useRef} from 'react';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, SafeAreaView, Keyboard } from 'react-native';
 import api from './src/services/api';
 
 export default function App() {
   const [cep, setCep] = useState('');
+  const [cepUser, setCepUser] = useState(null);
+
+  //referenciando o cursor no input quando clicar em limpar
+  const inputRef = useRef(null);
+
+  //função para limpar
+  function limpar(){
+    setCep('');
+    inputRef.current.focus();
+  }
+
+  async function buscar(){
+    if(cep == ''){
+      alert('Digite um CEP válido')
+      setCep('');
+      return; //se não passar o return ele vai continuar passando pra baixo
+    }
+    try{
+      const response = await api.get(`/${cep}/json`);
+      setCepUser(response.data)
+      Keyboard.dismiss();
+    }catch(error){
+      console.log('ERROR: ' + error);
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -15,25 +40,29 @@ export default function App() {
           value={cep}
           onChangeText={(text) => setCep(text)}
           keyboardType="numeric"
+          ref={inputRef}
         />
       </View>
       <View style={styles.areabtn}>
-        <TouchableOpacity style={styles.botaoLimpar }>
+        <TouchableOpacity style={styles.botaoLimpar} activeOpacity={0.7} onPress={limpar}>
           <Text style={styles.botaoText}>LIMPAR</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.botaoBuscar}>
+        <TouchableOpacity style={styles.botaoBuscar} activeOpacity={0.7} onPress={buscar}>
           <Text style={styles.botaoText}>BUSCAR</Text>
         </TouchableOpacity>
       </View>
 
+    {cepUser && 
       <View style={styles.resultado}>
-        <Text style={styles.itemText}>CEP: 07123090</Text>
-        <Text style={styles.itemText}>Logradouro: Rua teste</Text>
-        <Text style={styles.itemText}>Bairro: Centro</Text>
-        <Text style={styles.itemText}>Cidade: São Paulo</Text>
-        <Text style={styles.itemText}>UF: SP</Text>
+        <Text style={styles.itemText}>CEP: {cepUser.cep}</Text>
+        <Text style={styles.itemText}>Logradouro: {cepUser.logradouro}</Text>
+        <Text style={styles.itemText}>Bairro: {cepUser.bairro}</Text>
+        <Text style={styles.itemText}>Cidade: {cepUser.localidade}</Text>
+        <Text style={styles.itemText}>UF: {cepUser.uf}</Text>
       </View>
+    }
+      
     </SafeAreaView>
   );
 }
@@ -47,7 +76,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     fontSize: 25,
     fontWeight: 'bold',
-    color: '#A9A9DD'
   },
   input: {
     backgroundColor: '#FFFFFF',
